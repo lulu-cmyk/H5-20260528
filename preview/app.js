@@ -623,16 +623,19 @@ function renderCanvas() {
     //       时，自动按相同色相递减亮度直到达标。
     // 覆盖：黄(#FFCF00)、橙(#FA9116)、淡绿(#0CBD6A)、其它任何亮色
     const brandText = computeBrandText(hex);
-    // 补充规则：品牌色相对亮度 ≥ 0.45 时，在高亮色基础上增加10%的黑（变暗10%）
+    // 补充规则：品牌色相对亮度 ≥ 0.45 时，在高亮色基础上增加50%的黑（变暗50%）
     let finalBrandText = brandText;
     const origRgb = hexToRgb(hex);
     if (origRgb) {
       const origLum = relativeLuminance(origRgb[0], origRgb[1], origRgb[2]);
       if (origLum >= 0.45) {
-        finalBrandText = darkenColor(brandText, 0.9);
+        finalBrandText = darkenColor(brandText, 0.5);
       }
     }
     c.style.setProperty("--brand-text", finalBrandText);
+    // --brand-text-20：在高亮色基础上增加20%的黑（变暗20%），用于 CTA link、优惠券高亮文字、Tag 反色文字
+    const brandText20 = darkenColor(brandText, 0.8);
+    c.style.setProperty("--brand-text-20", brandText20);
     // brand-text-16：同色系深色的 16% 透明版，用于图标圆角矩形弱底
     c.style.setProperty("--brand-text-16", colorWithAlpha(finalBrandText, 0.16));
     // --brand-on: 品牌"底色上的文字色"，亮品牌(黄/橙)→深色，暗品牌→白色
@@ -658,7 +661,8 @@ function renderCanvas() {
     c.style.removeProperty("--brand-on");
     delete c.dataset.gc;
 
-    // 跟随主题(auto)时：用 themeBrand 设置 --brand 及相关变量，确保 Tag/按钮等元素跟随主题色
+    // 跟随主题(auto)时：用 themeBrand 设置 --brand 及相关变量
+    // 渐变专属变量仅在 isGradientBg 时设置
     if (isGradientBg) {
       const startColor = state.bg === "light-gradient"
         ? rgbaFromHex(themeBrand, 0.5)
@@ -666,28 +670,36 @@ function renderCanvas() {
       c.style.setProperty("--gradient-start", startColor);
       c.style.setProperty("--gradient-end", "#F1F1F1");
       c.style.setProperty("--gradient-color", themeBrand);
-      // auto 模式下也要设置 --brand 全套变量，让 Tag/按钮/图标等元素跟随主题色
-      c.style.setProperty("--brand", themeBrand);
-      c.style.setProperty("--brand-light", rgbaFromHex(themeBrand, 0.5));
-      c.style.setProperty("--brand-soft", rgbaFromHex(themeBrand, 0.08));
-      c.style.setProperty("--brand-16", rgbaFromHex(themeBrand, 0.16));
-      c.style.setProperty("--brand-18", rgbaFromHex(themeBrand, 0.18));
-      c.style.setProperty("--brand-20", rgbaFromHex(themeBrand, 0.20));
-      c.style.setProperty("--brand-32", rgbaFromHex(themeBrand, 0.32));
-      const iconBgAlpha = getIconBgAlpha(themeBrand);
-      c.style.setProperty("--brand-icon-bg", rgbaFromHex(themeBrand, iconBgAlpha));
-      const brandText = computeBrandText(themeBrand);
-      c.style.setProperty("--brand-text", brandText);
-      c.style.setProperty("--brand-text-16", colorWithAlpha(brandText, 0.16));
-      // --brand-on: 品牌"底色上的文字色"，亮品牌(黄/橙)→深色，暗品牌→白色
-      const brandOn = isLightBrand(themeBrand) ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)";
-      c.style.setProperty("--brand-on", brandOn);
-      c.dataset.gc = themeBrand;
     } else {
       c.style.removeProperty("--gradient-start");
       c.style.removeProperty("--gradient-end");
       c.style.removeProperty("--gradient-color");
     }
+    // ===== 无论是否渐变，auto 模式都要设置 --brand 全套 + --brand-text(含变暗20%) =====
+    c.style.setProperty("--brand", themeBrand);
+    c.style.setProperty("--brand-light", rgbaFromHex(themeBrand, 0.5));
+    c.style.setProperty("--brand-soft", rgbaFromHex(themeBrand, 0.08));
+    c.style.setProperty("--brand-16", rgbaFromHex(themeBrand, 0.16));
+    c.style.setProperty("--brand-18", rgbaFromHex(themeBrand, 0.18));
+    c.style.setProperty("--brand-20", rgbaFromHex(themeBrand, 0.20));
+    c.style.setProperty("--brand-32", rgbaFromHex(themeBrand, 0.32));
+    const iconBgAlpha2 = getIconBgAlpha(themeBrand);
+    c.style.setProperty("--brand-icon-bg", rgbaFromHex(themeBrand, iconBgAlpha2));
+    // --brand-text 智能可读色（含变暗50%补充规则）
+    const bt = computeBrandText(themeBrand);
+    let fbt = bt;
+    const tRgb = hexToRgb(themeBrand);
+    if (tRgb && relativeLuminance(tRgb[0], tRgb[1], tRgb[2]) >= 0.45) {
+      fbt = darkenColor(bt, 0.5);
+    }
+    c.style.setProperty("--brand-text", fbt);
+    // --brand-text-20：在高亮色基础上增加20%的黑（变暗20%），用于 CTA link、优惠券高亮文字、Tag 反色文字
+    const bt20 = darkenColor(bt, 0.8);
+    c.style.setProperty("--brand-text-20", bt20);
+    c.style.setProperty("--brand-text-16", colorWithAlpha(fbt, 0.16));
+    // --brand-on
+    c.style.setProperty("--brand-on", isLightBrand(themeBrand) ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)");
+    c.dataset.gc = themeBrand;
   }
 
   // 联动：仅渐变底时显示色块行
@@ -803,7 +815,8 @@ function getIconBgAlpha(hex) {
 // ============================================================
 // WCAG 相对亮度公式：返回 0~1，0=纯黑 1=纯白
 // 阈值 0.5：< 0.5 视为深底（反白），≥ 0.5 视为浅底（彩色）
-const LUMINANCE_THRESHOLD = 0.45;
+const LUMINANCE_THRESHOLD = 0.45;        // 品牌色文字色判断：≥0.45 走黑字
+const LOGO_INVERT_THRESHOLD = 0.35;       // Logo 反白判断：<0.35 反白（暗底），保持原有行为
 
 function relativeLuminance(r, g, b) {
   const f = c => {
@@ -1014,7 +1027,7 @@ function isHeaderDarkBg() {
   }
   // 其他形态走默认亮度判断
   const lum = getLogoAreaLuminance();
-  return lum < LUMINANCE_THRESHOLD;
+  return lum < LOGO_INVERT_THRESHOLD;
 }
 
 let _logoRenderToken = 0;

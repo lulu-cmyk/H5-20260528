@@ -361,10 +361,10 @@ body {
 }
 .h5-header[data-align="center"] .header-tag { align-self: center; }
 
-/* Tag 反色：白底 + 品牌高亮色文字 + 品牌色 32% 描边 */
+/* Tag 反色：白底 + 品牌高亮色文字（变暗20%）+ 品牌色 32% 描边 */
 .header-tag[data-invert="1"] {
   background: #fff;
-  color: var(--brand);
+  color: var(--brand-text-20, var(--brand-text, var(--brand)));
   border: 1px solid var(--brand-32);
   /* 因加了 1px 边框，line-height 减 2px 保持视觉等高 */
   line-height: 46px;
@@ -544,7 +544,7 @@ body {
   font-size: 48px;
   line-height: 1.2;
   font-weight: 500;
-  color: var(--brand-text);
+  color: var(--brand-text-20, var(--brand-text));
   text-align: center;
   padding: 32px 0 8px;
 }
@@ -552,7 +552,7 @@ body {
 .coupon-name {
   font-size: var(--fs-caption);
   line-height: var(--lh-caption);
-  color: var(--brand-text);
+  color: var(--brand-text-20, var(--brand-text));
   text-align: center;
   padding: 0 16px 24px;
 }
@@ -562,7 +562,7 @@ body {
   font-size: var(--fs-caption);
   line-height: var(--lh-caption);
   font-weight: 600;
-  color: var(--brand-text);
+  color: var(--brand-text-20, var(--brand-text));
   text-align: center;
   padding: 16px 16px;
 }
@@ -2035,7 +2035,7 @@ body {
 .cta-link {
   font-size: var(--fs-caption);
   line-height: var(--lh-caption);
-  color: var(--brand, #1A6BFF);
+  color: var(--brand-text-20, rgba(0,0,0,0.64));
   text-decoration: none;
   cursor: pointer;
 }
