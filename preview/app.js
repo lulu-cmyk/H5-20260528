@@ -75,12 +75,14 @@ const LOGO_PRESETS = {
     "telecom":      "assets/logos/own/通讯.svg",
     "cross-border": "assets/logos/own/跨境.svg",
     "credit-card":  "assets/logos/own/信用卡.svg",
+    "zhibie":       "assets/logos/own/腾讯智慧鹅.svg",
   },
   // QA 头像图标：根据业务类型选择 partner 图标
   qaPartnerMap: {
     "credit-card":  "assets/icons/partner/图标_微信信用卡.png",
     "telecom":      "assets/icons/partner/图标_腾讯手机充值.png",
     "cross-border": "assets/icons/partner/微信logo.svg",
+    "zhibie":       "assets/icons/partner/图标_微信信用卡.png",
   },
 };
 
@@ -359,7 +361,7 @@ const state = {
   },
   // ⚠️ 核心原则：同一内容只在一个模块出现，禁止跨模块重复
   // ⚠️ 字符串中禁止用英文双引号 "，必须用中文引号「」或 \u201C\u201D，否则会导致 SyntaxError
-  showFooter: true,
+  showFooter: false,
   modules: {
     "title-text":  true,
     "coupon":      false,
@@ -575,9 +577,10 @@ function renderCanvas() {
 
   // 跟随主题时，获取当前业务主题对应的品牌色
   const THEME_COLORS = {
-    telecom: "#1A6BFF",
-    "cross-border": "#11C16E",
-    "credit-card": "#11C16E"
+    telecom: "#11C16E",
+    "cross-border": "#1A6BFF",
+    "credit-card": "#11C16E",
+    zhibie: "#FADB14"
   };
   const themeBrand = THEME_COLORS[state.theme] || "#1A6BFF";
 
@@ -620,9 +623,21 @@ function renderCanvas() {
     //       时，自动按相同色相递减亮度直到达标。
     // 覆盖：黄(#FFCF00)、橙(#FA9116)、淡绿(#0CBD6A)、其它任何亮色
     const brandText = computeBrandText(hex);
-    c.style.setProperty("--brand-text", brandText);
+    // 补充规则：品牌色相对亮度 ≥ 0.45 时，在高亮色基础上增加10%的黑（变暗10%）
+    let finalBrandText = brandText;
+    const origRgb = hexToRgb(hex);
+    if (origRgb) {
+      const origLum = relativeLuminance(origRgb[0], origRgb[1], origRgb[2]);
+      if (origLum >= 0.45) {
+        finalBrandText = darkenColor(brandText, 0.9);
+      }
+    }
+    c.style.setProperty("--brand-text", finalBrandText);
     // brand-text-16：同色系深色的 16% 透明版，用于图标圆角矩形弱底
-    c.style.setProperty("--brand-text-16", colorWithAlpha(brandText, 0.16));
+    c.style.setProperty("--brand-text-16", colorWithAlpha(finalBrandText, 0.16));
+    // --brand-on: 品牌"底色上的文字色"，亮品牌(黄/橙)→深色，暗品牌→白色
+    const brandOn = isLightBrand(hex) ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)";
+    c.style.setProperty("--brand-on", brandOn);
   } else {
     c.style.removeProperty("--gradient-color");
     c.style.removeProperty("--brand");
@@ -640,9 +655,10 @@ function renderCanvas() {
     c.style.removeProperty("--brand-70");
     c.style.removeProperty("--brand-0");
     c.style.removeProperty("--brand-top");
+    c.style.removeProperty("--brand-on");
     delete c.dataset.gc;
 
-    // 跟随主题(auto)时：brand 变量由 CSS [data-theme] 驱动，但渐变背景需要 JS 设置 --gradient-start
+    // 跟随主题(auto)时：用 themeBrand 设置 --brand 及相关变量，确保 Tag/按钮等元素跟随主题色
     if (isGradientBg) {
       const startColor = state.bg === "light-gradient"
         ? rgbaFromHex(themeBrand, 0.5)
@@ -650,6 +666,23 @@ function renderCanvas() {
       c.style.setProperty("--gradient-start", startColor);
       c.style.setProperty("--gradient-end", "#F1F1F1");
       c.style.setProperty("--gradient-color", themeBrand);
+      // auto 模式下也要设置 --brand 全套变量，让 Tag/按钮/图标等元素跟随主题色
+      c.style.setProperty("--brand", themeBrand);
+      c.style.setProperty("--brand-light", rgbaFromHex(themeBrand, 0.5));
+      c.style.setProperty("--brand-soft", rgbaFromHex(themeBrand, 0.08));
+      c.style.setProperty("--brand-16", rgbaFromHex(themeBrand, 0.16));
+      c.style.setProperty("--brand-18", rgbaFromHex(themeBrand, 0.18));
+      c.style.setProperty("--brand-20", rgbaFromHex(themeBrand, 0.20));
+      c.style.setProperty("--brand-32", rgbaFromHex(themeBrand, 0.32));
+      const iconBgAlpha = getIconBgAlpha(themeBrand);
+      c.style.setProperty("--brand-icon-bg", rgbaFromHex(themeBrand, iconBgAlpha));
+      const brandText = computeBrandText(themeBrand);
+      c.style.setProperty("--brand-text", brandText);
+      c.style.setProperty("--brand-text-16", colorWithAlpha(brandText, 0.16));
+      // --brand-on: 品牌"底色上的文字色"，亮品牌(黄/橙)→深色，暗品牌→白色
+      const brandOn = isLightBrand(themeBrand) ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)";
+      c.style.setProperty("--brand-on", brandOn);
+      c.dataset.gc = themeBrand;
     } else {
       c.style.removeProperty("--gradient-start");
       c.style.removeProperty("--gradient-end");
@@ -770,7 +803,7 @@ function getIconBgAlpha(hex) {
 // ============================================================
 // WCAG 相对亮度公式：返回 0~1，0=纯黑 1=纯白
 // 阈值 0.5：< 0.5 视为深底（反白），≥ 0.5 视为浅底（彩色）
-const LUMINANCE_THRESHOLD = 0.35;
+const LUMINANCE_THRESHOLD = 0.45;
 
 function relativeLuminance(r, g, b) {
   const f = c => {
@@ -791,6 +824,24 @@ function relativeLuminance(r, g, b) {
 //      原因：纯黄/纯橙在大字号上呈"老油漆黄"廉价感；
 //            降饱和后变成"高级金"（如 #FFCF00 → 古铜金 #B5862F）
 // ============================================================
+
+// 颜色变暗：在每个通道上乘以 factor (0~1)，factor=0.9 表示变暗10%
+// 支持 hex(#RRGGBB) 和 rgb(r,g,b) 两种输入格式
+function darkenColor(color, factor = 0.9) {
+  let r, g, b;
+  if (color.startsWith("#")) {
+    const rgb = hexToRgb(color);
+    if (!rgb) return color;
+    r = rgb[0]; g = rgb[1]; b = rgb[2];
+  } else if (color.startsWith("rgb(")) {
+    const m = color.match(/rgb\((\d+),(\d+),(\d+)\)/);
+    if (!m) return color;
+    r = parseInt(m[1]); g = parseInt(m[2]); b = parseInt(m[3]);
+  } else {
+    return color;
+  }
+  return `rgb(${Math.round(r * factor)},${Math.round(g * factor)},${Math.round(b * factor)})`;
+}
 const BRAND_TEXT_BG = [255, 255, 255];  // 文字承载底色：白底卡片
 const BRAND_TEXT_MIN_CONTRAST = 4.5;     // WCAG AA 正文标准
 
@@ -799,6 +850,16 @@ const BRAND_TEXT_MIN_CONTRAST = 4.5;     // WCAG AA 正文标准
 // 区间 [25°, 70°] → [0.069, 0.194]
 function isYellowOrangeHue(h) {
   return h >= 25 / 360 && h <= 70 / 360;
+}
+
+// 判断品牌色是否为"亮底色"：在品牌色背景上需用深色(黑)文字
+// 通用规则：不论色相，相对亮度 ≥ 0.45 时返回 true（走黑字），否则走白字
+function isLightBrand(hex) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return false;
+  // 通用亮度判断：相对亮度 ≥ 0.45 走黑字
+  const lum = relativeLuminance(rgb[0], rgb[1], rgb[2]);
+  return lum >= 0.45;
 }
 
 function computeBrandText(hex) {
@@ -975,7 +1036,7 @@ async function buildLogoFragment(url, dark) {
 // 主 Logo 路径（基于当前模式）
 function resolveMainLogoUrl() {
   const mode = state.header.logoMode;
-  if (mode === "auto") return LOGO_PRESETS.themeMap[state.theme] || null;
+  if (mode === "auto" || mode === "default") return LOGO_PRESETS.themeMap[state.theme] || null;
   if (mode === "custom") return null; // 自定义走 dataURL 分支
   if (mode === "none") return null;
   if (mode && mode.startsWith("assets/logos/")) return mode;
@@ -2089,8 +2150,8 @@ function bindEvents() {
   function updateBankColorUI() {
     const bankKey = state.bankColor;
     const themeBrand = {
-      telecom: "#1A6BFF",
-      "cross-border": "#11C16E",
+      telecom: "#11C16E",
+      "cross-border": "#1A6BFF",
       "credit-card": "#11C16E"
     }[state.theme] || "#1A6BFF";
 

@@ -124,23 +124,7 @@ body {
 }
 
 /* ===== 业务主题 ===== */
-.h5-canvas[data-theme="telecom"] {
-  --brand:        #1A6BFF;   /* 偏亮科技蓝 */
-  --brand-text:   var(--brand);
-  --brand-text-16: rgba(26,107,255,0.16);
-  --brand-light:  #6BA3FF;
-  --brand-soft:   rgba(26,107,255,0.08);
-  --brand-16:     rgba(26,107,255,0.16);
-  --brand-18:     rgba(26,107,255,0.18);
-  --brand-32:     rgba(26,107,255,0.32);
-  --brand-20:     rgba(26,107,255,0.20);
-  --brand-icon-bg: rgba(26,107,255,0.12);  /* 蓝色：图标弱底 12% */
-  --brand-30:     rgba(26,107,255,0.30);
-  --brand-50:     rgba(26,107,255,0.50);
-  --brand-70:     rgba(26,107,255,0.70);
-  --brand-0:      rgba(26,107,255,0);
-}
-.h5-canvas[data-theme="cross-border"],
+.h5-canvas[data-theme="telecom"],
 .h5-canvas[data-theme="credit-card"] {
   --brand:        #11C16E;   /* 偏亮翠绿 */
   --brand-text:   var(--brand);
@@ -156,6 +140,23 @@ body {
   --brand-50:     rgba(17,193,110,0.50);
   --brand-70:     rgba(17,193,110,0.70);
   --brand-0:      rgba(17,193,110,0);
+}
+
+.h5-canvas[data-theme="cross-border"] {
+  --brand:        #1A6BFF;   /* 偏亮科技蓝 */
+  --brand-text:   var(--brand);
+  --brand-text-16: rgba(26,107,255,0.16);
+  --brand-light:  #6BA3FF;
+  --brand-soft:   rgba(26,107,255,0.08);
+  --brand-16:     rgba(26,107,255,0.16);
+  --brand-18:     rgba(26,107,255,0.18);
+  --brand-32:     rgba(26,107,255,0.32);
+  --brand-20:     rgba(26,107,255,0.20);
+  --brand-icon-bg: rgba(26,107,255,0.12);  /* 蓝色：图标弱底 12% */
+  --brand-30:     rgba(26,107,255,0.30);
+  --brand-50:     rgba(26,107,255,0.50);
+  --brand-70:     rgba(26,107,255,0.70);
+  --brand-0:      rgba(26,107,255,0);
 }
 
 /* ===== 页面底色 ===== */
@@ -329,14 +330,12 @@ body {
   margin: 0;
 }
 /* 按业务主题切换标题字体 */
-.h5-canvas[data-theme="credit-card"] .header-title {
+/* 默认：MF YuanHei（.header-title 已定义，telecom 和 cross-border 继承默认）*/
+/* 信用卡 + 智慧鹅 → Noto Sans SC */
+.h5-canvas[data-theme="credit-card"] .header-title,
+.h5-canvas[data-theme="zhibie"] .header-title {
   font-family: "Noto Sans SC SemiBold", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   font-weight: 600;
-}
-.h5-canvas[data-theme="cross-border"] .header-title,
-.h5-canvas[data-theme="telecom"] .header-title {
-  font-family: "ZaoZiGongFangYuanHeiTi-2", "MF-YuanHeiNoncommercial-Regular", "MF YuanHei", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-weight: 400;
 }
 .header-title .hl { color: var(--brand-text); }
 
@@ -354,7 +353,7 @@ body {
   height: 48px;
   line-height: 48px;
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-on, #fff);
   font-size: var(--fs-body);  /* 正文内容档 28px */
   font-weight: 600;            /* 加粗：Semibold */
   border-radius: 8px;
@@ -2016,7 +2015,7 @@ body {
   font-size: 34px;
   line-height: 48px;
   font-weight: 600;
-  color: rgba(255,255,255,0.88);
+  color: var(--brand-on, rgba(255,255,255,0.88));
   background: var(--brand, #1A6BFF);
   border: none;
   border-radius: 16px;
